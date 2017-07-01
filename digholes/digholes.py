@@ -23,7 +23,7 @@ def main(settings):
 
     """
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     settings_pre = dict(
         SCHEDULER_DUPEFILTER_KEY = 'digholes:dupefilter',

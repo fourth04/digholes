@@ -71,6 +71,7 @@ class Crawler(PipeScheduler):
         while True:
             url = self.dequeue('in')
             if url:
+                self.logger.info(f"crawl:{url}")
                 try:
                     r = requests.get(url, timeout=10)
                     if r.ok:
@@ -94,12 +95,12 @@ class Crawler(PipeScheduler):
 
 def main(settings):
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     c = Crawler.from_settings(settings)
     c.open()
     #  c.crawl_single(1)
-    n = settings.get('NUM_CRAWLER_THRED', 10)
+    n = settings.get('NUM_CRAWLER_THREAD', 10)
     c.crawl_bulk(n)
 
 if __name__ == "__main__":

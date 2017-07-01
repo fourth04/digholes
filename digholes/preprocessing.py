@@ -1,5 +1,4 @@
 import re
-import time
 import os
 from urllib.parse import urlparse
 import dns.resolver
@@ -8,6 +7,10 @@ from IPy import IP
 from itertools import chain
 from concurrent.futures import ThreadPoolExecutor
 from redisqueue.scheduler import DupeFilterScheduler
+import importlib
+import six
+import time
+from redisqueue import connection
 import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -21,6 +24,51 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
     """
     用于对入库的数据进行预处理，包括格式检查、url的话进行dns解析、入库ip去重、默认自动入库ip所在的C段地址段
     """
+    def __init__(self, server,
+                 persist=False,
+                 flush_on_start=False,
+                 queue_key='queue:%(timestamp)s' % {'timestamp': int(time.time())},
+                 queue_cls='redisqueue.rqueues.FifoQueue',
+                 dupefilter_key='dupefilter:%(timestamp)s' % {'timestamp': int(time.time())},
+                 dupefilter_cls='redisqueue.dupefilter.RFPDupeFilter',
+                 dupefilter_debug=False,
+                 idle_before_close=0,
+                 serializer=None,
+                 subnet_mask=32):
+        """Initialize scheduler.
+
+        Parameters
+        ----------
+        subnet_mask : int
+            以当前ip地址的多少子网掩码地址段来加入队列，默认就是当前地址，不取C段
+        """
+        super().__init__(server, persist, flush_on_start, queue_key, queue_cls, dupefilter_key, dupefilter_cls, dupefilter_debug, idle_before_close, serializer)
+        self.subnet_mask = subnet_mask
+
+    @classmethod
+    def from_settings(cls, settings):
+        kwargs = {
+            'persist': settings.get('SCHEDULER_PERSIST', True),
+            'flush_on_start': settings.get('SCHEDULER_FLUSH_ON_START', False),
+            'queue_key': settings.get('SCHEDULER_QUEUE_KEY', 'queue:%(timestamp)s' % {'timestamp': int(time.time())}),
+            'queue_cls': settings.get('SCHEDULER_QUEUE_CLASS', 'redisqueue.rqueues.FifoQueue'),
+            'dupefilter_key': settings.get('SCHEDULER_DUPEFILTER_KEY', 'dupefilter:%(timestamp)s' % {'timestamp': int(time.time())}),
+            'dupefilter_cls': settings.get('SCHEDULER_DUPEFILTER_CLASS', 'redisqueue.dupefilter.RFPDupeFilter'),
+            'dupefilter_debug': settings.get('SCHEDULER_DUPEFILTER_DEBUG', False),
+            'idle_before_close': settings.get('SCHEDULER_IDLE_BEFORE_CLOSE', 0),
+            'serializer': settings.get('SCHEDULER_SERIALIZER', None),
+            'subnet_mask': settings.get('SUBNET_MASK', 32)
+        }
+
+        # Support serializer as a path to a module.
+        if isinstance(kwargs.get('serializer'), six.string_types):
+            kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
+
+        server = connection.from_settings(settings)
+        # Ensure the connection is working.
+        server.ping()
+
+        return cls(server=server, **kwargs)
 
     def dns_resolve(self, domain):
         """将域名解析成地址段
@@ -35,7 +83,7 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
             a = dns.resolver.query(domain, 'A').response.answer
             #  即便是只查A记录，最后还是可能会出dns.rdtypes.ANY.CNAME.CNAME类型的记录，所以需要判断是否是dns.rdtypes.IN.A.A
             resolve_result = (j.address for i in a for j in i.items if isinstance(j, dns.rdtypes.IN.A.A))
-            ips = (ip for ip_net in (IP(ip).make_net(24) for ip in resolve_result) for ip in ip_net)
+            ips = (ip for ip_net in (IP(ip).make_net(self.subnet_mask) for ip in resolve_result) for ip in ip_net)
         except Exception:
             ips = []
         finally:
@@ -63,7 +111,7 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
             if ip.len() > 1:
                 return (x for x in ip)
             else:
-                return (x for x in ip.make_net(24))
+                return (x for x in ip.make_net(self.subnet_mask))
 
     def resolve_single(self, url_like):
         parse_result = urlparse(url_like)
@@ -107,7 +155,7 @@ def main(settings):
 
     """
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     p = Preprocessing.from_settings(settings)
     p.open()

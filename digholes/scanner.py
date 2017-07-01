@@ -4,7 +4,6 @@ import nmap
 import socket
 from functools import partial
 import logging
-import logging.config
 
 class NmapScanner(PipeScheduler):
 
@@ -64,6 +63,7 @@ class SocketScanner(PipeScheduler):
         while True:
             ip = self.dequeue('in')
             if ip:
+                self.logger.info(f"scan:{ip}")
                 partial_scan = partial(self.socket_scan, ip)
                 with ThreadPoolExecutor(1000) as pool:
                     result = pool.map(partial_scan, range(1, 65536))
@@ -85,7 +85,7 @@ def main(settings):
 
     """
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     #  n = NmapScanner.from_settings(settings)
     #  n.open()
@@ -101,7 +101,7 @@ def main(settings):
 if __name__ == "__main__":
     from multiprocessing import Process
     settings = {'REDIS_HOST': '127.0.0.1',
-                'REDIS_PORT': 6379,
+                'REDIS_PORT': 6888,
                 'SCHEDULER_SERIALIZER': 'json',
                 'SCHEDULER_QUEUE_IN_KEY': 'digholes:queue_ip_pool',
                 'SCHEDULER_QUEUE_IN_CLASS': 'redisqueue.rqueues.LifoQueue',

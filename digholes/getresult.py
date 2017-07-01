@@ -5,6 +5,8 @@ import json
 import csv
 from redisqueue.scheduler import Scheduler
 import datetime
+from utils import get_settings
+import conf
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,6 +23,10 @@ def main(settings):
     :returns: TODO
 
     """
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S')
+
     try:
         # Short option syntax: "hv:"
         # Long option syntax: "help" or "verbose="
@@ -40,18 +46,18 @@ def main(settings):
             verbose = argument
             logger.info(verbose)
         elif option in ("-n", "--number"):
-            number = int(argument) if argument else 100
+            number = int(argument)
         elif option in ("-o", "--output"):
-            output = argument if argument else "output_" + str(datetime.datetime.now()) + ".csv"
+            output = argument
             #  output = 'foo.json'
             #  output = 'foo.csv'
             #  output = 'foo.txt'
             suffix = os.path.basename(output).split('.')[-1]
 
+    number = 100 if 'number' not in dir() else number
+    output = "output_" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + ".csv" if 'output' not in dir() else output
 
-    logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S')
+    import pdb; pdb.set_trace()  # XXX BREAKPOINT
     g = GetResult.from_settings(settings)
     g.open()
     result = g.get(number)
@@ -72,11 +78,16 @@ def main(settings):
             else:
                 f.write(','.join(result[0].keys())+'\n')
                 f.writelines(( ','.join(_.values())+'\n' for _ in result ))
+        logger.info(f'保存{output}')
 
 if __name__ == "__main__":
-    settings = {'REDIS_HOST': '127.0.0.1',
-                'REDIS_PORT': 6379,
-                'SCHEDULER_SERIALIZER': 'json',
-                'SCHEDULER_QUEUE_KEY': 'digholes:queue_response_pool'
-                }
-    main(settings)
+    #  settings = {'REDIS_HOST': '127.0.0.1',
+                #  'REDIS_PORT': 6379,
+                #  'SCHEDULER_SERIALIZER': 'json',
+                #  }
+    settings = get_settings(conf)
+    settings_get = dict(
+        SCHEDULER_QUEUE_KEY = 'digholes:queue_response_pool',
+        **settings
+    )
+    main(settings_get)

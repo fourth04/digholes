@@ -1,0 +1,5 @@
+watchdog==0.8.3
+lxml==3.7.2
+redisqueue.egg==info
+python_nmap==0.6.1
+requests==2.12.4

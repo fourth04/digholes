@@ -82,6 +82,8 @@ class Crawler(PipeScheduler):
                             self.enqueue(result)
                         else:
                             self.logger.info(f"filter:{url}")
+                    else:
+                        self.logger.info(f"discard:{url}")
                 except Exception as e:
                     #  self.logger.error(f"{url},{e}")
                     pass
@@ -97,7 +99,8 @@ def main(settings):
     c = Crawler.from_settings(settings)
     c.open()
     #  c.crawl_single(1)
-    c.crawl_bulk(10)
+    n = settings.get('NUM_CRAWLER_THRED', 10)
+    c.crawl_bulk(n)
 
 if __name__ == "__main__":
     from multiprocessing import Process

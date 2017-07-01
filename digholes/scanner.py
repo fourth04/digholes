@@ -65,14 +65,14 @@ class SocketScanner(PipeScheduler):
             ip = self.dequeue('in')
             if ip:
                 partial_scan = partial(self.socket_scan, ip)
-                with ThreadPoolExecutor(300) as pool:
+                with ThreadPoolExecutor(1000) as pool:
                     result = pool.map(partial_scan, range(1, 65536))
                     for url in result:
                         if url:
                             self.logger.info(f"produce:{url}")
                             self.enqueue(url, 'out')
 
-    def scan_bulk(self, n=5):
+    def scan_bulk(self, n=10):
         with ThreadPoolExecutor(n) as pool:
             pool.map(self.scan_single, range(n))
 
@@ -94,7 +94,8 @@ def main(settings):
     s = SocketScanner.from_settings(settings)
     s.open()
     #  s.scan_single(1)
-    s.scan_bulk(5)
+    n = settings.get('NUM_SCAN_THREAD', 10)
+    s.scan_bulk(n)
 
 
 if __name__ == "__main__":

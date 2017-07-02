@@ -5,6 +5,11 @@ import socket
 from functools import partial
 import logging
 
+import importlib
+import six
+import time
+from redisqueue import connection
+
 class NmapScanner(PipeScheduler):
 
     """从redis-queue中获取ip，进行nmapscan，然后再存放到另一个redis-queue中"""
@@ -48,6 +53,55 @@ class NmapScanner(PipeScheduler):
 class SocketScanner(PipeScheduler):
 
     """通过socket进行端口扫描的类"""
+    def __init__(self, server,
+                 persist=False,
+                 flush_on_start=False,
+                 queue_in_key='queue_in:%(timestamp)s' % {'timestamp': int(time.time())},
+                 queue_in_cls='redisqueue.rqueues.FifoQueue',
+                 queue_out_key='queue_out:%(timestamp)s' % {'timestamp': int(time.time())},
+                 queue_out_cls='redisqueue.rqueues.FifoQueue',
+                 idle_before_close=0,
+                 serializer=None,
+                 num_scan_host_threads=5,
+                 num_scan_port_threads=1000):
+
+        """Initialize scheduler.
+
+        Parameters
+        ----------
+        num_scan_host_threads: int
+            同时扫描host的线程数
+        num_scan_port_threads: int
+            同时扫描port的线程数
+        """
+        super().__init__(server, persist, flush_on_start, queue_in_key, queue_in_cls, queue_out_key, queue_out_cls, idle_before_close, serializer)
+        self.num_scan_host_threads = num_scan_host_threads
+        self.num_scan_port_threads = num_scan_port_threads
+
+    @classmethod
+    def from_settings(cls, settings):
+        kwargs = {
+            'persist': settings.get('SCHEDULER_PERSIST', True),
+            'flush_on_start': settings.get('SCHEDULER_FLUSH_ON_START', False),
+            'queue_in_key': settings.get('SCHEDULER_QUEUE_IN_KEY', 'queue_in:%(timestamp)s' % {'timestamp': int(time.time())}),
+            'queue_in_cls': settings.get('SCHEDULER_QUEUE_IN_CLASS', 'redisqueue.rqueues.FifoQueue'),
+            'queue_out_key': settings.get('SCHEDULER_QUEUE_OUT_KEY', 'queue_out:%(timestamp)s' % {'timestamp': int(time.time())}),
+            'queue_out_cls': settings.get('SCHEDULER_QUEUE_OUT_CLASS', 'redisqueue.rqueues.FifoQueue'),
+            'idle_before_close': settings.get('SCHEDULER_IDLE_BEFORE_CLOSE', 0),
+            'serializer': settings.get('SCHEDULER_SERIALIZER', None),
+            'num_scan_host_threads': settings.get('NUM_SCAN_HOST_THREADS', 5),
+            'num_scan_port_threads': settings.get('NUM_SCAN_PORT_THREADS', 1000),
+        }
+
+        # Support serializer as a path to a module.
+        if isinstance(kwargs.get('serializer'), six.string_types):
+            kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
+
+        server = connection.from_settings(settings)
+        # Ensure the connection is working.
+        server.ping()
+
+        return cls(server=server, **kwargs)
 
     def socket_scan(self, target_host, target_port):
         s = socket.socket()
@@ -65,14 +119,15 @@ class SocketScanner(PipeScheduler):
             if ip:
                 self.logger.info(f"scan:{ip}")
                 partial_scan = partial(self.socket_scan, ip)
-                with ThreadPoolExecutor(1000) as pool:
+                with ThreadPoolExecutor(self.num_scan_port_threads) as pool:
                     result = pool.map(partial_scan, range(1, 65536))
                     for url in result:
                         if url:
                             self.logger.info(f"produce:{url}")
                             self.enqueue(url, 'out')
 
-    def scan_bulk(self, n=10):
+    def scan_bulk(self, n=0):
+        n = self.num_scan_host_threads if not n else n
         with ThreadPoolExecutor(n) as pool:
             pool.map(self.scan_single, range(n))
 
@@ -84,7 +139,7 @@ def main(settings):
     :returns: TODO
 
     """
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     #  n = NmapScanner.from_settings(settings)
@@ -94,8 +149,8 @@ def main(settings):
     s = SocketScanner.from_settings(settings)
     s.open()
     #  s.scan_single(1)
-    n = settings.get('NUM_SCAN_THREAD', 10)
-    s.scan_bulk(n)
+    s.scan_bulk()
+    s.close()
 
 
 if __name__ == "__main__":

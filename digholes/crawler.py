@@ -23,6 +23,7 @@ class Crawler(PipeScheduler):
                  queue_out_cls='redisqueue.rqueues.FifoQueue',
                  idle_before_close=0,
                  serializer=None,
+                 num_crawl_threads=10,
                  blacklist=r'',
                  whitelist=r'.*'):
 
@@ -31,11 +32,14 @@ class Crawler(PipeScheduler):
         Parameters
         ----------
         blacklist : str
-            网页名称过滤黑名单
+            网页标题过滤黑名单
         whitelist : str
-            网页名称过滤白名单
+            网页标题过滤白名单
+        num_crawl_threads: int
+            同时爬取网页内容的线程数
         """
         super().__init__(server, persist, flush_on_start, queue_in_key, queue_in_cls, queue_out_key, queue_out_cls, idle_before_close, serializer)
+        self.num_crawl_threads = num_crawl_threads
         self.blacklist = re.compile(blacklist)
         self.whitelist = re.compile(whitelist)
 
@@ -50,6 +54,7 @@ class Crawler(PipeScheduler):
             'queue_out_cls': settings.get('SCHEDULER_QUEUE_OUT_CLASS', 'redisqueue.rqueues.FifoQueue'),
             'idle_before_close': settings.get('SCHEDULER_IDLE_BEFORE_CLOSE', 0),
             'serializer': settings.get('SCHEDULER_SERIALIZER', None),
+            'num_crawl_threads': settings.get('NUM_CRAWL_THREADS', 10),
             'blacklist': settings.get('BLACKLIST', r''),
             'whitelist': settings.get('WHITELIST', r'.*')
         }
@@ -86,22 +91,22 @@ class Crawler(PipeScheduler):
                     else:
                         self.logger.info(f"discard:{url}")
                 except Exception as e:
-                    #  self.logger.error(f"{url},{e}")
-                    pass
+                    self.logger.info(f"discard:{url}")
 
-    def crawl_bulk(self, n=10):
+    def crawl_bulk(self, n=0):
+        n = self.num_crawl_threads if not n else n
         with ThreadPoolExecutor(n) as pool:
             pool.map(self.crawl_single, range(n))
 
 def main(settings):
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
     c = Crawler.from_settings(settings)
     c.open()
     #  c.crawl_single(1)
-    n = settings.get('NUM_CRAWLER_THREAD', 10)
-    c.crawl_bulk(n)
+    c.crawl_bulk()
+    c.close()
 
 if __name__ == "__main__":
     from multiprocessing import Process

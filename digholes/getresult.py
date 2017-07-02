@@ -23,7 +23,7 @@ def main(settings):
     :returns: TODO
 
     """
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
 

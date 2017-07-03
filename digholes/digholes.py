@@ -40,15 +40,18 @@ def main(settings):
         SCHEDULER_QUEUE_OUT_KEY = 'digholes:queue_response_pool',
         **settings
     )
+    num_scan_host_processes = settings.get('NUM_SCAN_HOST_PROCESSES', 1)
+
     ps = []
-    p1 = Process(target=preprocessing.main, args=(settings_pre,))
-    p2 = Process(target=scanner.main, args=(settings_scan,))
-    p3 = Process(target=crawler.main, args=(settings_crawl,))
-    logger.info("启动各子进程")
-    for p in p1, p2, p3:
+    for _ in range(num_scan_host_processes):
+        ps.append(Process(target=scanner.main, args=(settings_scan,), name=f'scanner_{_}'))
+    ps.append(Process(target=preprocessing.main, args=(settings_pre,), name='preprocessing'))
+    ps.append(Process(target=crawler.main, args=(settings_crawl,), name='crawler'))
+
+    for p in ps:
         p.daemon = True
         p.start()
-        ps.append(p)
+        logger.info(f'启动进程：{p.name}，进程ID：{p.pid}')
     #  解决孤儿进程问题
     signal.signal(signal.SIGTERM, term)
     #  当子进程挂了之后自动重启

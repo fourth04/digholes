@@ -52,12 +52,11 @@ def main(settings):
             #  output = 'foo.json'
             #  output = 'foo.csv'
             #  output = 'foo.txt'
-            suffix = os.path.basename(output).split('.')[-1]
 
     number = 100 if 'number' not in dir() else number
     output = "output_" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + ".csv" if 'output' not in dir() else output
+    suffix = os.path.basename(output).split('.')[-1]
 
-    import pdb; pdb.set_trace()  # XXX BREAKPOINT
     g = GetResult.from_settings(settings)
     g.open()
     result = g.get(number)
@@ -67,7 +66,7 @@ def main(settings):
     #  ]
     g.close()
     if result:
-        with open(output, 'w', newline='') as f:
+        with open(output, 'w', newline='', encoding='utf-8-sig') as f:
             if suffix == 'csv':
                 headers = result[0].keys()
                 f_csv = csv.DictWriter(f, headers)

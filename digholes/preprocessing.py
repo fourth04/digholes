@@ -133,8 +133,9 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
                     ips = self.dns_resolve(searched_domain.group(0))
                 else:
                     ips = []
-                    self.logger.info('输入文档格式错误')
+                    self.logger.info(f'{url_like}输入文档格式错误')
         for ip in ips:
+            self.logger.info(f'produce:{ip}')
             self.enqueue(str(ip))
 
     def resolve_bulk(self, url_like_l, n=30):
@@ -144,7 +145,7 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
     def on_created(self, event):
         try:
             with open(event.src_path) as f:
-                data = f.readlines()
+                data = ( row for row in f.readlines() if row.strip())
             self.resolve_bulk(data)
         except Exception as e:
             self.logger.info(e)

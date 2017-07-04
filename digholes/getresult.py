@@ -54,7 +54,10 @@ def main(settings):
             #  output = 'foo.txt'
 
     number = 100 if 'number' not in dir() else number
-    output = "output_" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + ".csv" if 'output' not in dir() else output
+    output = r"output/output_" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + ".csv" if 'output' not in dir() else output
+    dirname_output = os.path.dirname(output)
+    if dirname_output and not os.path.exists(dirname_output):
+        os.mkdir(dirname_output)
     suffix = os.path.basename(output).split('.')[-1]
 
     g = GetResult.from_settings(settings)
@@ -71,13 +74,18 @@ def main(settings):
                 headers = result[0].keys()
                 f_csv = csv.DictWriter(f, headers)
                 f_csv.writeheader()
-                f_csv.writerows(result)
+                #  f_csv.writerows(result)
+                for row in result:
+                    try:
+                        f_csv.writerow(row)
+                    except Exception:
+                        logger.warn(f'写入"{row}"时遇错，跳过此行')
             elif suffix == 'json':
-                json.dump(result, f)
+                json.dump(result, f, ensure_ascii=False, indent=4)
             else:
                 f.write(','.join(result[0].keys())+'\n')
                 f.writelines(( ','.join(_.values())+'\n' for _ in result ))
-        logger.info(f'保存{output}')
+        logger.info(f'保存至：{output}')
 
 if __name__ == "__main__":
     #  settings = {'REDIS_HOST': '127.0.0.1',

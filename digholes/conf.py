@@ -1,5 +1,5 @@
 #  redis服务器信息
-REDIS_HOST = '127.0.0.1'
+REDIS_HOST = '121.10.40.154'
 REDIS_PORT = 6888
 
 #  序列化格式

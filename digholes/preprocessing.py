@@ -178,7 +178,7 @@ def main(settings):
 if __name__ == "__main__":
     from multiprocessing import Process
     settings = {'REDIS_HOST': '127.0.0.1',
-                'REDIS_PORT': 6379,
+                'REDIS_PORT': 6888,
                 'SCHEDULER_SERIALIZER': 'json',
                 'SCHEDULER_QUEUE_KEY': 'digholes:queue_ip_pool',
                 'SCHEDULER_DUPEFILTER_KEY' : 'digholes:dupefilter',

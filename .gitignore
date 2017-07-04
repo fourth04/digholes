@@ -36,3 +36,4 @@ nosetests.xml
 .pydevproject
 
 digholes/input
+digholes/output

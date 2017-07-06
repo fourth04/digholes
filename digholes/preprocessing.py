@@ -144,8 +144,9 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
 
     def on_created(self, event):
         try:
-            with open(event.src_path) as f:
-                data = ( row for row in f.readlines() if row.strip())
+            self.logger.info(f"found file {event.src_path} created!")
+            with open(event.src_path, encoding='utf8') as f:
+                data = ( row.split(',')[0].strip() for row in f.readlines() if row.strip())
             self.resolve_bulk(data)
         except Exception as e:
             self.logger.info(e)
@@ -176,14 +177,15 @@ def main(settings):
     p.close()
 
 if __name__ == "__main__":
-    from multiprocessing import Process
     settings = {'REDIS_HOST': '127.0.0.1',
                 'REDIS_PORT': 6888,
                 'SCHEDULER_SERIALIZER': 'json',
                 'SCHEDULER_QUEUE_KEY': 'digholes:queue_ip_pool',
                 'SCHEDULER_DUPEFILTER_KEY' : 'digholes:dupefilter',
-                'INPUT_PATH': 'url',
+                'INPUT_PATH': 'input',
                 }
-    p = Process(target=main, args=(settings,))
-    p.start()
-    p.join()
+    #  from multiprocessing import Process
+    #  p = Process(target=main, args=(settings,))
+    #  p.start()
+    #  p.join()
+    main(settings)

@@ -129,7 +129,7 @@ class SocketScanner(PipeScheduler):
                 with ThreadPoolExecutor(self.num_scan_port_threads) as pool:
                     result = pool.map(partial_scan, range(1, 65536))
                     filtered_result = [_ for _ in result if _]
-                    if len(filtered_result) > 9999:
+                    if len(filtered_result) > 999:
                         self.logger.info(f"filter:{ip}")
                     else:
                         for url in filtered_result:

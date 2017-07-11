@@ -107,6 +107,7 @@ def main():
     for option, argument in opts:
         if option in ("-h", "--help"):
             print("使用格式为python awvs11.py -i urls.txt -t target/scan")
+            return None
         elif option in ("-v", "--verbose"):
             verbose = argument
         elif option in ("-i", "--input"):

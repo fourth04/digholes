@@ -61,16 +61,13 @@ class Config(dict):
     use the export statement::
         export YOURAPPLICATION_SETTINGS='/path/to/config/file'
     On windows use `set` instead.
-    :param root_path: path to which files are read relative from.  When the
-                      config object is created by the application, this is
-                      the application's :attr:`~flask.Flask.root_path`.
     :param defaults: an optional dictionary of default values
     """
 
-    def __init__(self, root_path, defaults=None):
+    def __init__(self, defaults=None):
         dict.__init__(self, defaults or {})
-        self.root_path = root_path
 
+    @classmethod
     def from_envvar(self, variable_name, silent=False):
         """Loads a configuration from an environment variable pointing to
         a configuration file.  This is basically just a shortcut with nicer
@@ -90,33 +87,37 @@ class Config(dict):
                                'loaded.  Set this variable and make it '
                                'point to a configuration file' %
                                variable_name)
-        return self.from_pyfile(rv, silent=silent)
+        return cls.from_pyfile(rv, silent=silent)
 
-    def from_pyfile(self, filename, silent=False):
+    @classmethod
+    def from_pyfile(cls, filepath, silent=False):
         """Updates the values in the config from a Python file.  This function
         behaves as if the file was imported as module with the
         :meth:`from_object` function.
-        :param filename: the filename of the config.  This can either be an
-                         absolute filename or a filename relative to the
-                         root path.
+        :param filepath: the filepath of the config.  This can either be an
+                         absolute filepath or a filepath relative to the
+                         current path.
         :param silent: set to ``True`` if you want silent failure for missing
                        files.
         .. versionadded:: 0.7
            `silent` parameter.
         """
-        filename = os.path.join(self.root_path, filename)
+        if not os.path.exists(filepath):
+            raise Exception(f'{filepath} is not exists')
         d = types.ModuleType('config')
-        d.__file__ = filename
+        d.__file__ = filepath
         try:
-            with open(filename, mode='rb') as config_file:
-                exec(compile(config_file.read(), filename, 'exec'), d.__dict__)
+            with open(filepath, mode='rb') as config_file:
+                exec(compile(config_file.read(), filepath, 'exec'), d.__dict__)
         except IOError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
                 return False
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
-        self.from_object(d)
-        return True
+
+        cfg = cls()
+        cfg.from_object(d)
+        return cfg
 
     def from_object(self, obj):
         """Updates the values from the given object.  An object can be of one
@@ -143,28 +144,32 @@ class Config(dict):
             if key.isupper():
                 self[key] = getattr(obj, key)
 
-    def from_json(self, filename, silent=False):
+    @classmethod
+    def from_json(cls, filepath, silent=False):
         """Updates the values in the config from a JSON file. This function
         behaves as if the JSON object was a dictionary and passed to the
         :meth:`from_mapping` function.
-        :param filename: the filename of the JSON file.  This can either be an
-                         absolute filename or a filename relative to the
-                         root path.
+        :param filepath: the filepath of the JSON file.  This can either be an
+                         absolute filepath or a filepath relative to the
+                         current path.
         :param silent: set to ``True`` if you want silent failure for missing
                        files.
         .. versionadded:: 0.11
         """
-        filename = os.path.join(self.root_path, filename)
-
+        if not os.path.exists(filepath):
+            raise Exception(f'{filepath} is not exists')
         try:
-            with open(filename) as json_file:
+            with open(filepath) as json_file:
                 obj = json.loads(json_file.read())
         except IOError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
                 return False
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
-        return self.from_mapping(obj)
+
+        cfg = cls()
+        cfg.from_mapping(obj)
+        return cfg
 
     def from_mapping(self, *mapping, **kwargs):
         """Updates the config like :meth:`update` ignoring items with non-upper

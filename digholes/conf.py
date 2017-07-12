@@ -16,7 +16,7 @@ BLACKLIST = r'^(Apache Tomcat|Welcome to nginx|IIS7|Powered by lighttpd|Welcome 
 
 #  各组件线程数
 #  同时扫描多少个IP
-NUM_SCAN_HOST_PROCESSES = 7
+NUM_SCAN_HOST_PROCESSES = 1
 #  扫描单个IP时同时扫描多少个端口
 NUM_SCAN_PORT_THREADS = 777
 #  注意，Linux系统默认限制了单个程序可同时打开的文件句柄为1024，可使用ulimit -n查看
@@ -24,3 +24,15 @@ NUM_SCAN_PORT_THREADS = 777
 #  Linux可以通过ulimit -n 10240指令来调大该参数
 #  同时爬取多少张网页的内容
 NUM_CRAWL_THREADS = 20
+
+#  预处理程序在Redis上的KEY
+SCHEDULER_DUPEFILTER_KEY_PRE = 'digholes:dupefilter'
+SCHEDULER_QUEUE_KEY_PRE = 'digholes:queue_ip_pool'
+
+#  端口扫描程序在Redis上的KEY
+SCHEDULER_QUEUE_IN_KEY_SCAN = 'digholes:queue_ip_pool'
+SCHEDULER_QUEUE_OUT_KEY_SCAN = 'digholes:queue_url_pool'
+
+#  网页爬取程序在Redis上的KEY
+SCHEDULER_QUEUE_IN_KEY_CRAWL = 'digholes:queue_url_pool'
+SCHEDULER_QUEUE_OUT_KEY_CRAWL = 'digholes:queue_response_pool'

@@ -37,6 +37,7 @@ nosetests.xml
 
 digholes/input
 digholes/output
+conf.py
 *.csv
 *.xlsx
 *.xls

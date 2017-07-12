@@ -38,3 +38,5 @@ nosetests.xml
 digholes/input
 digholes/output
 *.csv
+*.xlsx
+*.xls

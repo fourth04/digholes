@@ -1,8 +1,8 @@
-import preprocessing
-import scanner
-import crawler
+from . import preprocessing
+from . import scanner
+from . import crawler
+from .config import Config
 import logging
-from config import Config
 from multiprocessing import Process
 import os
 import signal

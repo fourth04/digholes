@@ -39,8 +39,8 @@ setup(
     author_email='GYangyun@mail.com',
     entry_points = {
         'console_scripts': [
-            'digholes = digholes.digholes.main',
-            'getresult = digholes.component.getresult.main',
+            'digholes = digholes.digholes:main',
+            'getresult = digholes.component.getresult:main',
         ]
     },
 )

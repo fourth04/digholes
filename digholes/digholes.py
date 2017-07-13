@@ -44,17 +44,17 @@ def main():
                     format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
 
-    settings_pre = cfg.copy()
-    settings_pre['SCHEDULER_DUPEFILTER_KEY'] = cfg.get('SCHEDULER_DUPEFILTER_KEY_PRE', 'digholes:dupefilter')
-    settings_pre['SCHEDULER_QUEUE_KEY'] = cfg.get('SCHEDULER_QUEUE_KEY_PRE', 'digholes:queue_ip_pool')
+    settings_pre = settings.copy()
+    settings_pre['SCHEDULER_DUPEFILTER_KEY'] = settings.get('SCHEDULER_DUPEFILTER_KEY_PRE', 'digholes:dupefilter')
+    settings_pre['SCHEDULER_QUEUE_KEY'] = settings.get('SCHEDULER_QUEUE_KEY_PRE', 'digholes:queue_ip_pool')
 
-    settings_scan = cfg.copy()
-    settings_scan['SCHEDULER_QUEUE_IN_KEY'] = cfg.get('SCHEDULER_QUEUE_IN_KEY_SCAN', 'digholes:queue_ip_pool')
-    settings_scan['SCHEDULER_QUEUE_OUT_KEY'] = cfg.get('SCHEDULER_QUEUE_OUT_KEY_SCAN', 'digholes:queue_url_pool')
+    settings_scan = settings.copy()
+    settings_scan['SCHEDULER_QUEUE_IN_KEY'] = settings.get('SCHEDULER_QUEUE_IN_KEY_SCAN', 'digholes:queue_ip_pool')
+    settings_scan['SCHEDULER_QUEUE_OUT_KEY'] = settings.get('SCHEDULER_QUEUE_OUT_KEY_SCAN', 'digholes:queue_url_pool')
 
-    settings_crawl = cfg.copy()
-    settings_crawl['SCHEDULER_QUEUE_IN_KEY'] = cfg.get('SCHEDULER_QUEUE_IN_KEY_CRAWL', 'digholes:queue_url_pool')
-    settings_crawl['SCHEDULER_QUEUE_OUT_KEY'] = cfg.get('SCHEDULER_QUEUE_OUT_KEY_CRAWL ', 'digholes:queue_response_pool')
+    settings_crawl = settings.copy()
+    settings_crawl['SCHEDULER_QUEUE_IN_KEY'] = settings.get('SCHEDULER_QUEUE_IN_KEY_CRAWL', 'digholes:queue_url_pool')
+    settings_crawl['SCHEDULER_QUEUE_OUT_KEY'] = settings.get('SCHEDULER_QUEUE_OUT_KEY_CRAWL ', 'digholes:queue_response_pool')
 
     num_scan_host_processes = settings.get('NUM_SCAN_HOST_PROCESSES', 1)
 

@@ -37,7 +37,8 @@ def main():
     for option, argument in opts:
         if option in ('-h', '--help'):
             msg = '''
-            Usage: python getresult.py [-h] [-v h] [-a 127.0.0.1] [-p 6379] [-k digholes:queue_response_pool] [-s json] [-n 100] [-o output.txt]
+            Usage: python getresult.py [-h] [-v h] [-a 127.0.0.1] [-p 6379] [-k digholes:queue_response_pool] [-s json] [-n 100] [-o output.csv]
+            Example: python getresult.py -a 127.0.0.1 -p 6379 -k digholes:queue_response_pool -n 1 -o foo.csv
             '''
             logger.info(msg)
             return None

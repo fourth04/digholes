@@ -62,7 +62,7 @@ def main():
     key =  'digholes:queue_response_pool' if 'key' not in dir() else key
     serializer =  'json' if 'serializer' not in dir() else serializer
     number = 100 if 'number' not in dir() else number
-    output = r'output/output_' + datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + '.csv' if 'output' not in dir() else output
+    output = r'output/output_' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.csv' if 'output' not in dir() else output
     dirname_output = os.path.dirname(output)
     if dirname_output and not os.path.exists(dirname_output):
         os.mkdir(dirname_output)

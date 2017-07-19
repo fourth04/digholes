@@ -7,13 +7,13 @@ from multiprocessing import Process
 import os
 import signal
 import time
-import getopt
+import argparse
 import sys
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-def term(sig_num, addtion):
+def terminate_handler(sig_num, addtion):
     logger.error('current pid is %s, group id is %s' % (os.getpid(), os.getpgrp()))
     os.killpg(os.getpgid(os.getpid()), signal.SIGKILL)
 
@@ -22,24 +22,11 @@ def main():
     :returns: TODO
 
     """
-    try:
-        # Short option syntax: 'hv:'
-        # Long option syntax: 'help' or 'verbose='
-        opts, args = getopt.getopt(sys.argv[1:], 'hv:c:', ['help', 'verbose=', 'config='])
-    except getopt.GetoptError as err:
-        # Print debug info
-        print(str(err))
-        error_action
-    for option, argument in opts:
-        if option in ('-h', '--help'):
-            print(f'使用方法为：python digholes -c conf.py')
-            return None
-        elif option in ('-v', '--verbose'):
-            verbose = argument
-        elif option in ('-c', '--config'):
-            cfg_filepath = argument
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config', action='store', help='config file path')
+    args = parser.parse_args()
 
-    settings = Config.from_pyfile(cfg_filepath)
+    settings = Config.from_pyfile(args.config)
     logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
@@ -69,7 +56,7 @@ def main():
         p.start()
         logger.info(f'启动进程：{p.name}，进程ID：{p.pid}')
     #  解决孤儿进程问题
-    signal.signal(signal.SIGTERM, term)
+    signal.signal(signal.SIGTERM, terminate_handler)
     #  当子进程挂了之后自动重启
     while True:
         for i, p in enumerate(ps):

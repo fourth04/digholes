@@ -15,9 +15,9 @@ import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-IPADDR_PATTERN = re.compile(r'^(?:\d+\.){3}\d+')
-DOMAIN_PATTERN = re.compile(r'^(?:\w+\.){1,}\w+')
-
+IPADDR_PATTERN = re.compile(r'(?:\d+\.){3}\d+')
+DOMAIN_PATTERN = re.compile(r'(?:\w+\.){1,}\w+')
+IPADDR_FIELD_PATTERN = re.compile(r'(?:\d+\.){3}\d+[-~](?:\d+\.){3}\d+')
 
 class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
 
@@ -89,6 +89,26 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
         finally:
             return ips
 
+    def regulate(self, address_range):
+        """将不规范的地址段转换成单个ip的序列
+
+        :address_range: str
+        :returns: list
+
+        """
+        if IPADDR_FIELD_PATTERN.search(address_range):
+            ip1_str, ip2_str = re.split('[-~]', address_range)
+        else:
+            raise ValueError('IP Address format was invalid')
+        ip1 = IP(ip1_str)
+        ip2 = IP(ip2_str)
+        length = abs(ip1.int() - ip2.int())
+        start_int = ip1.int() if ip1.int() < ip2.int() else ip2.int()
+        ips = []
+        for i in range(length+1):
+            ips.append(IP(start_int+i))
+        return ips
+
     def ip_resolve(self, url_like):
         """解析IP地址字符串，
         - 如果是/32地址则将该地址字符串转换为所在C段所有地址
@@ -106,9 +126,9 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
         try:
             ip = IP(url_like)
         except ValueError as e:
-            raise e
-        else:
-            if ip.len() > 1:
+            ip = self.regulate(url_like)
+        finally:
+            if len(ip) > 1:
                 return (x for x in ip)
             else:
                 return (x for x in ip.make_net(self.subnet_mask))
@@ -135,8 +155,8 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
                     ips = []
                     self.logger.info(f'{url_like}输入文档格式错误')
         for ip in ips:
-            self.logger.info(f'produce:{ip}')
-            self.enqueue(str(ip))
+            if self.enqueue(str(ip)):
+                self.logger.info(f'produce:{ip}')
 
     def resolve_bulk(self, url_like_l, n=30):
         with ThreadPoolExecutor(n) as pool:
@@ -146,7 +166,7 @@ class Preprocessing(DupeFilterScheduler, FileSystemEventHandler):
         try:
             self.logger.info(f"found file {event.src_path} created!")
             with open(event.src_path, encoding='utf8') as f:
-                data = ( row.split(',')[0].strip() for row in f.readlines() if row.strip())
+                data = (row.split(',')[0].strip() for row in f.readlines() if row.strip())
             self.resolve_bulk(data)
         except Exception as e:
             self.logger.info(e)

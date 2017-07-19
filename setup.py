@@ -40,8 +40,6 @@ setup(
     entry_points = {
         'console_scripts': [
             'digholes = digholes.digholes:main',
-            'getresult = digholes.component.getresult:main',
-            'awvs11 = digholes.component.awvs11:main',
         ]
     },
 )

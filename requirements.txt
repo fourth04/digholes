@@ -3,3 +3,6 @@ lxml>=3.7.2
 python_nmap>=0.6.1
 dnspython>=1.14.0
 six>=1.10.0
+IPy>=0.83
+redis>=2.10
+requests>=2.18.1

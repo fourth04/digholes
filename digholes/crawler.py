@@ -82,7 +82,7 @@ class Crawler(PipeScheduler):
                     if r.ok:
                         tree = fromstring(r.content)
                         title = tree.findtext('.//title')
-                        if not self.blacklist.search(title) and self.whitelist.search(title):
+                        if not self.blacklist.search(title).group() and self.whitelist.search(title).group():
                             result = {'url': url, 'title': title}
                             self.logger.info(f"produce:{url}")
                             self.enqueue(result)

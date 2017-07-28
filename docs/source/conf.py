@@ -19,6 +19,8 @@ BLACKLIST = r'^(Welcome to nginx|IIS7|Powered by lighttpd|Welcome to tengine!).*
 NUM_SCAN_HOST_PROCESSES = 1
 #  扫描单个IP时同时扫描多少个端口
 NUM_SCAN_PORT_THREADS = 777
+#  扫描单个端口的socket连接时延是多少
+TIMEOUT_SCAN_PORT = 0.1
 #  注意，Linux系统默认限制了单个程序可同时打开的文件句柄为1024，可使用ulimit -n查看
 #  需要保证 NUM_SCAN_HOST_PROCESSES * NUM_SCAN_PORT_THREADS < 最大文件句柄数，否则会导致同时打开文件句柄数过大而异常
 #  Linux可以通过ulimit -n 10240指令来调大该参数

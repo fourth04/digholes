@@ -64,7 +64,8 @@ class SocketScanner(PipeScheduler):
                  queue_out_cls='redisqueue.rqueues.FifoQueue',
                  idle_before_close=0,
                  serializer=None,
-                 num_scan_port_threads=777):
+                 num_scan_port_threads=777,
+                 timeout_scan_port=0.1):
 
         """Initialize scheduler.
 
@@ -75,6 +76,7 @@ class SocketScanner(PipeScheduler):
         """
         super().__init__(server, persist, flush_on_start, queue_in_key, queue_in_cls, queue_out_key, queue_out_cls, idle_before_close, serializer)
         self.num_scan_port_threads = num_scan_port_threads
+        self.timeout_scan_port = timeout_scan_port
 
     @classmethod
     def from_settings(cls, settings):
@@ -88,6 +90,7 @@ class SocketScanner(PipeScheduler):
             'idle_before_close': settings.get('SCHEDULER_IDLE_BEFORE_CLOSE', 0),
             'serializer': settings.get('SCHEDULER_SERIALIZER', None),
             'num_scan_port_threads': settings.get('NUM_SCAN_PORT_THREADS', 777),
+            'timeout_scan_port': settings.get('TIMEOUT_SCAN_PORT', 0.1),
         }
 
         # Support serializer as a path to a module.
@@ -102,7 +105,7 @@ class SocketScanner(PipeScheduler):
 
     def scan_single(self, target_host, target_port):
         s = socket.socket()
-        s.settimeout(0.1)
+        s.settimeout(self.timeout_scan_port)
         if s.connect_ex((target_host, target_port)) == 0:
             url = f'http://{target_host}:{target_port}'
         else:
